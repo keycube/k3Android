@@ -4,8 +4,9 @@
     <string name="ip">IP address</string>
     <string name="uc">User code</string>
 
+    <string name="tk">Keyboard</string>
     <string name="hggk">HoloLens</string>
-    <string name="ssk">Smartphone</string>
+    <string name="ssk">Phone</string>
     <string name="kc">Keycube</string>
 
     <string name="start">Start</string>

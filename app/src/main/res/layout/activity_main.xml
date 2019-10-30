@@ -34,6 +34,13 @@
         android:layout_below="@+id/editTextUserCode">
 
         <RadioButton
+            android:id="@+id/radioButtonTK"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tk"/>
+
+        <RadioButton
             android:id="@+id/radioButtonHGGK"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

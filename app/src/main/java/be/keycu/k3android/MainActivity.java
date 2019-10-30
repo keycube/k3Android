@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.buttonStart) {
-
+            new NetworkUtils.SendDataTask().execute(mIpAddress, "s:");
         }
     }
 
@@ -128,6 +128,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onCheckedChanged(RadioGroup radioGroup, int radioButtonId) {
         switch (radioButtonId) {
+            case  R.id.radioButtonTK:
+                new NetworkUtils.SendDataTask().execute(mIpAddress, "i:tk");
+                break;
             case R.id.radioButtonHGGK:
                 new NetworkUtils.SendDataTask().execute(mIpAddress, "i:hggk");
                 break;
