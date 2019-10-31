@@ -1,6 +1,9 @@
 package be.keycu.k3android;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -27,6 +30,10 @@ public class MainActivity extends AppCompatActivity
 
     private String mIpAddress;
 
+    private BluetoothUtils bluetoothUtils;
+    private StringBuilder stringBuilder = new StringBuilder();
+    private TextView mTextViewConsole;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +58,30 @@ public class MainActivity extends AppCompatActivity
         mEditTextTranscribed = findViewById(R.id.editTextTranscribed);
         mEditTextTranscribed.setOnEditorActionListener(this);
         mEditTextTranscribed.addTextChangedListener(this);
+
+        mTextViewConsole = findViewById(R.id.textViewConsole);
+        Handler handler = new Handler(Looper.getMainLooper()) {
+
+            @Override
+            public void handleMessage(Message msg) {
+                if (msg.what == BluetoothUtils.RECEIVE_MESSAGE) {
+                    byte[] readBuf = (byte[]) msg.obj;
+                    String strIncoming = new String(readBuf, 0, msg.arg1);     // create string from bytes array
+                    Log.d("MainActivity", "strIncoming : " + strIncoming);
+                    stringBuilder.append(strIncoming);                                // append string
+                    //int endOfLineIndex = sb.indexOf("\r\n");                        // determine the end-of-line
+                    int endOfLineIndex = stringBuilder.indexOf(".");                  // in our case with a dot
+                    if (endOfLineIndex > 0) {                                         // if end-of-line,
+                        String result = stringBuilder.substring(0, endOfLineIndex);   // extract string
+                        stringBuilder.delete(0, stringBuilder.length());              // and clear
+                        mTextViewConsole.setText(result);
+                    }
+                }
+            }
+        };
+
+        bluetoothUtils = new BluetoothUtils(this, handler);
+        bluetoothUtils.start();
     }
 
 
