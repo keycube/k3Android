@@ -66,15 +66,26 @@ public class MainActivity extends AppCompatActivity
             public void handleMessage(Message msg) {
                 if (msg.what == BluetoothUtils.RECEIVE_MESSAGE) {
                     byte[] readBuf = (byte[]) msg.obj;
-                    String strIncoming = new String(readBuf, 0, msg.arg1);     // create string from bytes array
-                    Log.d("MainActivity", "strIncoming : " + strIncoming);
-                    stringBuilder.append(strIncoming);                                // append string
-                    //int endOfLineIndex = sb.indexOf("\r\n");                        // determine the end-of-line
-                    int endOfLineIndex = stringBuilder.indexOf(".");                  // in our case with a dot
-                    if (endOfLineIndex > 0) {                                         // if end-of-line,
-                        String result = stringBuilder.substring(0, endOfLineIndex);   // extract string
-                        stringBuilder.delete(0, stringBuilder.length());              // and clear
-                        mTextViewConsole.setText(result);
+                    // create string from bytes array
+                    String strIncoming = new String(readBuf, 0, msg.arg1);
+                    Log.d("MainActivity", "strIncoming   : " + strIncoming);
+                    // append string
+                    stringBuilder.append(strIncoming);
+
+                    // determine the "end-of-line" in our case with a dot .
+                    int endOfLineIndex = stringBuilder.indexOf(".");
+                    while (endOfLineIndex >= 0)
+                    {
+                        // extract string
+                        String result = K3Utils.GetCharacterFromKeycubeCode(stringBuilder.substring(0, endOfLineIndex));
+                        if (result != null) {
+                            // mTextViewConsole.setText(result);
+                            new NetworkUtils.SendDataTask().execute(mIpAddress, "k:" + result);
+                        }
+                        // and clear
+                        stringBuilder.delete(0, endOfLineIndex+1);
+                        // check if it remains another .
+                        endOfLineIndex = stringBuilder.indexOf(".");
                     }
                 }
             }
