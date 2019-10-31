@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity
 
     private String mIpAddress;
 
-    private BluetoothUtils bluetoothUtils;
     private StringBuilder stringBuilder = new StringBuilder();
     private TextView mTextViewConsole;
 
@@ -79,7 +78,7 @@ public class MainActivity extends AppCompatActivity
                         // extract string
                         String result = K3Utils.GetCharacterFromKeycubeCode(stringBuilder.substring(0, endOfLineIndex));
                         if (result != null) {
-                            // mTextViewConsole.setText(result);
+                            mTextViewConsole.setText(result);
                             new NetworkUtils.SendDataTask().execute(mIpAddress, "k:" + result);
                         }
                         // and clear
@@ -91,7 +90,7 @@ public class MainActivity extends AppCompatActivity
             }
         };
 
-        bluetoothUtils = new BluetoothUtils(this, handler);
+        BluetoothUtils bluetoothUtils = new BluetoothUtils(this, handler);
         bluetoothUtils.start();
     }
 

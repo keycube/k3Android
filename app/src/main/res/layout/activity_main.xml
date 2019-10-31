@@ -75,7 +75,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/labelTranscribedText"
-        android:layout_above="@+id/editTextTranscribed"
+        android:layout_below="@+id/buttonStart"
         android:labelFor="@+id/editTextTranscribed" />
 
     <be.keycu.k3android.BlockedSelectionEditText
