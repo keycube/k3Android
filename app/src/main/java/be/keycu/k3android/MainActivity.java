@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity
 
         mEditTextUserCode = findViewById(R.id.editTextUserCode);
         mEditTextUserCode.setOnEditorActionListener(this);
+        mEditTextUserCode.setText(PrefUtils.getUserCodePref(this));
 
         RadioGroup radioGroupTextEntryInterface = findViewById(R.id.radioGroupTextEntryInterface);
         radioGroupTextEntryInterface.setOnCheckedChangeListener(this);
@@ -69,7 +70,9 @@ public class MainActivity extends AppCompatActivity
                     mEditTextTranscribed.getText().clear();
                     break;
                 case R.id.editTextUserCode:
+                    PrefUtils.setUseCodePref(this, mEditTextUserCode.getText().toString());
                     new NetworkUtils.SendDataTask().execute(mIpAddress, "u:" + mEditTextUserCode.getText());
+                    Toast.makeText(getApplicationContext(), mEditTextUserCode.getText(), Toast.LENGTH_LONG).show();
                     break;
                 case R.id.editTextIpAddress:
                     mIpAddress = textView.getText().toString();
