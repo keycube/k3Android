@@ -1,6 +1,8 @@
 package be.keycu.k3android;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -11,45 +13,51 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 public class MainActivity extends AppCompatActivity
     implements TextView.OnEditorActionListener,
         TextWatcher,
-        View.OnClickListener,
-        RadioGroup.OnCheckedChangeListener {
+        View.OnClickListener {
 
 
     private BlockedSelectionEditText mEditTextTranscribed;
-    private EditText mEditTextUserCode;
 
-    private String mIpAddress;
-
-    private StringBuilder stringBuilder = new StringBuilder();
+    private TextView mTextViewPresented;
+    private TextView mTextViewWPM;
+    private TextView mTextViewER;
+    private TextView mTextViewKSPC;
     private TextView mTextViewConsole;
+
+    private int indexPhrase;
+
+    private boolean transcriptStarted = false;
+
+    private long timeStart;
+    private long timeEnd;
+
+    private String inputStreamFull = "";
+    private String mConsole = "";
+    private String mPresentedText = "";
+
+    private File mFile;
+    private long timeStartSession;
+    private DateFormat mDateFormat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mIpAddress = NetworkUtils.getIpAddressPref(this);
-
-        EditText editTextIpAddress = findViewById(R.id.editTextIpAddress);
-        editTextIpAddress.setOnEditorActionListener(this);
-        editTextIpAddress.setText(mIpAddress);
-
-        mEditTextUserCode = findViewById(R.id.editTextUserCode);
-        mEditTextUserCode.setOnEditorActionListener(this);
-        mEditTextUserCode.setText(PrefUtils.getUserCodePref(this));
-
-        RadioGroup radioGroupTextEntryInterface = findViewById(R.id.radioGroupTextEntryInterface);
-        radioGroupTextEntryInterface.setOnCheckedChangeListener(this);
 
         Button buttonStart = findViewById(R.id.buttonStart);
         buttonStart.setOnClickListener(this);
@@ -58,42 +66,17 @@ public class MainActivity extends AppCompatActivity
         mEditTextTranscribed.setOnEditorActionListener(this);
         mEditTextTranscribed.addTextChangedListener(this);
 
+        mTextViewPresented = findViewById(R.id.textViewPresented);
+        mTextViewWPM = findViewById(R.id.textViewWPM);
+        mTextViewER = findViewById(R.id.textViewER);
+        mTextViewKSPC = findViewById(R.id.textViewKSPC);
         mTextViewConsole = findViewById(R.id.textViewConsole);
-        Handler handler = new Handler(Looper.getMainLooper()) {
 
-            @Override
-            public void handleMessage(Message msg) {
-                if (msg.what == BluetoothUtils.RECEIVE_MESSAGE) {
-                    byte[] readBuf = (byte[]) msg.obj;
-                    // create string from bytes array
-                    String strIncoming = new String(readBuf, 0, msg.arg1);
-                    Log.d("MainActivity", "strIncoming   : " + strIncoming);
-                    // append string
-                    stringBuilder.append(strIncoming);
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        mFile = new File(dir, "data_log.txt");
 
-                    // determine the "end-of-line" in our case with a dot .
-                    int endOfLineIndex = stringBuilder.indexOf(".");
-                    while (endOfLineIndex >= 0)
-                    {
-                        // extract string
-                        String result = K3Utils.GetCharacterFromKeycubeCode(stringBuilder.substring(0, endOfLineIndex));
-                        if (result != null) {
-                            mTextViewConsole.setText(result);
-                            new NetworkUtils.SendDataTask().execute(mIpAddress, "k:" + result);
-                        }
-                        // and clear
-                        stringBuilder.delete(0, endOfLineIndex+1);
-                        // check if it remains another .
-                        endOfLineIndex = stringBuilder.indexOf(".");
-                    }
-                }
-            }
-        };
-
-        BluetoothUtils bluetoothUtils = new BluetoothUtils(this, handler);
-        bluetoothUtils.start();
+        mDateFormat = new SimpleDateFormat("HH:mm:ss");
     }
-
 
     /*
     IMPLEMENTS
@@ -105,22 +88,63 @@ public class MainActivity extends AppCompatActivity
     public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
         boolean handled = false;
         if (actionId == EditorInfo.IME_ACTION_DONE) {
-            switch (textView.getId()) {
-                case R.id.editTextTranscribed:
-                    handled = true;
+            if (textView.getId() == R.id.editTextTranscribed) {
+                handled = true;
+                float timeDeltaSeconds = (timeEnd - timeStart) / 1000.0f;
+                String transcribedText = mEditTextTranscribed.getText().toString();
+                float WPM = K3Utils.WordsPerMinute(transcribedText, timeDeltaSeconds);
+                mTextViewWPM.setText(String.format("%s wpm", WPM));
+                float ER = K3Utils.ErrorRate(mPresentedText, transcribedText) * 100;
+                mTextViewER.setText(String.format("%s %%", ER));
+                float KSPC = K3Utils.KSPC(inputStreamFull.length(), mPresentedText.length());
+                mTextViewKSPC.setText(String.format("%s", KSPC));
+
+                /*
+                String dataLog = mDateFormat.format(Calendar.getInstance().getTime()) + ","
+                        + mPresentedText + ","
+                        + transcribedText + ","
+                        + inputStreamFull + ","
+                        + WPM + ","
+                        + ER + ","
+                        + KSPC + "\n";
+                 */
+                String dataLog = mDateFormat.format(Calendar.getInstance().getTime()) + "#"
+                        + mPresentedText + "#"
+                        + transcribedText + "#"
+                        + inputStreamFull + "#"
+                        + WPM + "#"
+                        + ER + "#"
+                        + KSPC + "\n";
+
+                try {
+                    FileOutputStream out = new FileOutputStream(mFile, true);
+                    out.write(dataLog.getBytes());
+                    out.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                //float deltaSession = (System.currentTimeMillis() - timeStartSession) / 1000.0f;
+                //if (deltaSession > (60*20)) {
+                if (indexPhrase >= 199) {
+                    String endStr = mDateFormat.format(Calendar.getInstance().getTime()) + ",END\n";
+                    try {
+                        FileOutputStream out = new FileOutputStream(mFile, true);
+                        out.write(endStr.getBytes());
+                        out.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    mTextViewPresented.setText("END");
+                }
+                else {
+                    transcriptStarted = false;
+                    inputStreamFull = "";
                     mEditTextTranscribed.getText().clear();
-                    break;
-                case R.id.editTextUserCode:
-                    PrefUtils.setUseCodePref(this, mEditTextUserCode.getText().toString());
-                    new NetworkUtils.SendDataTask().execute(mIpAddress, "u:" + mEditTextUserCode.getText());
-                    Toast.makeText(getApplicationContext(), mEditTextUserCode.getText(), Toast.LENGTH_LONG).show();
-                    break;
-                case R.id.editTextIpAddress:
-                    mIpAddress = textView.getText().toString();
-                    NetworkUtils.setIpAddressPref(this, mIpAddress);
-                    Toast.makeText(getApplicationContext(), mIpAddress, Toast.LENGTH_LONG).show();
-                    Log.d("MainActivity", "ipAddress");
-                    break;
+                    indexPhrase += 1;
+                    mPresentedText = K3Utils.phraseSet.get(indexPhrase);
+                    mTextViewPresented.setText(mPresentedText);
+                }
             }
         }
         return handled;
@@ -133,22 +157,33 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-
     // TextWatcher
     @Override
     public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
         if (count > before) {
+            if (!transcriptStarted)
+            {
+                transcriptStarted = true;
+                timeStart = System.currentTimeMillis();
+            }
+            timeEnd = System.currentTimeMillis();
+
             String transcribedTextDelta = charSequence.subSequence(start + before, charSequence.length()).toString();
             if (transcribedTextDelta.equals(" "))
                 transcribedTextDelta = "_";
-            new NetworkUtils.SendDataTask().execute(mIpAddress, "k:" + transcribedTextDelta);
+            inputStreamFull += transcribedTextDelta;
         } else {
             if (count - before < -1) {
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "k:>");
+                //inputStreamFull += ">";
             } else {
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "k:<");
+                inputStreamFull += "<";
             }
         }
+
+        mConsole = "timeStart: " + timeStart + "\n"
+                + "timeEnd: " + timeEnd + "\n"
+                + "inputStream: " + inputStreamFull;
+        mTextViewConsole.setText(mConsole);
     }
 
 
@@ -163,27 +198,23 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.buttonStart) {
-            new NetworkUtils.SendDataTask().execute(mIpAddress, "s:");
-        }
-    }
+            indexPhrase = 0;
+            //K3Utils.RandomizePhraseSet();
 
+            K3Utils.InitPhraseSet2();
+            mPresentedText = K3Utils.phraseSet.get(indexPhrase);
+            mTextViewPresented.setText(mPresentedText);
 
-    // RadioGroup.OnCheckedChangeListener
-    @Override
-    public void onCheckedChanged(RadioGroup radioGroup, int radioButtonId) {
-        switch (radioButtonId) {
-            case  R.id.radioButtonTK:
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "i:tk");
-                break;
-            case R.id.radioButtonHGGK:
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "i:hggk");
-                break;
-            case  R.id.radioButtonSSK:
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "i:ssk");
-                break;
-            case  R.id.radioButtonKC:
-                new NetworkUtils.SendDataTask().execute(mIpAddress, "i:kc");
-                break;
+            timeStartSession = System.currentTimeMillis();
+
+            String startStr = mDateFormat.format(Calendar.getInstance().getTime()) + ",START\n";
+            try {
+                FileOutputStream out = new FileOutputStream(mFile, true);
+                out.write(startStr.getBytes());
+                out.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

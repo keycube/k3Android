@@ -7,76 +7,52 @@
     android:padding="16dp"
     tools:context=".MainActivity">
 
-    <EditText
-        android:id="@+id/editTextIpAddress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="text"
-        android:imeOptions="actionDone"
-        android:hint="@string/ip"
-        android:importantForAutofill="no" />
-
-    <EditText
-        android:id="@+id/editTextUserCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/editTextIpAddress"
-        android:inputType="datetime"
-        android:imeOptions="actionDone"
-        android:importantForAutofill="no"
-        android:hint="@string/uc"/>
-
-    <RadioGroup
-        android:id="@+id/radioGroupTextEntryInterface"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_below="@+id/editTextUserCode">
-
-        <RadioButton
-            android:id="@+id/radioButtonTK"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/tk"/>
-
-        <RadioButton
-            android:id="@+id/radioButtonHGGK"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/hggk"/>
-
-        <RadioButton
-            android:id="@+id/radioButtonSSK"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/ssk"/>
-
-        <RadioButton
-            android:id="@+id/radioButtonKC"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/kc"/>
-
-    </RadioGroup>
 
     <Button
         android:id="@+id/buttonStart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/radioGroupTextEntryInterface"
-        android:text="@string/start"/>
+        android:text="@string/start"
+        android:layout_marginTop="64dp"/>
+
+    <TextView
+        android:id="@+id/textViewPresented"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="abcdefghijklmnopqrstuvwxyz"
+        android:layout_marginTop="16dp"
+        android:layout_below="@+id/buttonStart" />
+
+    <TextView
+        android:id="@+id/textViewWPM"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewPresented"
+        android:layout_alignParentRight="true"
+        android:text="17 wpm"/>
+
+    <TextView
+        android:id="@+id/textViewER"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewWPM"
+        android:layout_alignParentRight="true"
+        android:text="9 %"/>
+
+    <TextView
+        android:id="@+id/textViewKSPC"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewER"
+        android:layout_alignParentRight="true"
+        android:text="1.0"/>
 
     <TextView
         android:id="@+id/textViewConsole"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/labelTranscribedText"
-        android:layout_below="@+id/buttonStart"
-        android:labelFor="@+id/editTextTranscribed" />
+        android:layout_below="@id/textViewKSPC"
+        android:text="Console"/>
 
     <be.keycu.k3android.BlockedSelectionEditText
         android:id="@+id/editTextTranscribed"
